@@ -1,23 +1,20 @@
-# OmniNSP — Reconstruction Code
+# OmniNSP
 
-OmniNSP의 원본 영상에서 context/target 구간, 음성, 프레임을 로컬에 재구성하는
-코드입니다. 공개 대표 저장소는 이 프로젝트 하나로 정리합니다.
+OmniNSP annotation을 바탕으로 원본 영상에서 context와 target 구간을 재구성하는 도구입니다. YouTube 영상을 내려받고 각 구간의 비디오, 오디오와 프레임을 추출합니다.
 
-`NSP`, `OmniPred`, `omninsp-benchmark-private`의 초기 구현·검토 UI·비공개
-평가 파이프라인을 이 저장소에 복사하지 않습니다. 이들은 비공개 보관본으로
-남기며, 모델 예측 결과와 평가 자료도 분리합니다.
+## 주요 기능
 
-| 경로 | 역할 |
-|---|---|
-| `download/reconstruct.py` | annotation을 읽어 영상을 다운로드하고 구간·음성·프레임 추출 |
+- annotation의 video ID를 기준으로 원본 영상 수집
+- context/target 쌍별 영상 구간, 음성 및 프레임 추출
+- 필요한 미디어 유형만 선택하여 처리
+- 생성된 로컬 파일 경로를 annotation에 추가
+- 처리된 영상과 쌍의 성공·실패 집계
 
 ## 사용
 
-Python, yt-dlp와 FFmpeg가 필요합니다. 아래 annotation 경로는 사용자가
-별도로 제공하는 입력입니다. 이 코드 사본에는 annotation 자체도 포함하지 않습니다.
+Python, yt-dlp와 FFmpeg가 필요합니다. JSON annotation 파일을 입력으로 지정합니다.
 
 ```bash
-python download/reconstruct.py --help
 python download/reconstruct.py \
   --annotation /path/to/annotations.json \
   --base-dir /path/to/local-media \
@@ -25,10 +22,17 @@ python download/reconstruct.py \
   --extract-items all
 ```
 
-개인 cookies, 로그인 자료, 원본 미디어, 모델 출력, 평가 결과와 분석 그림은
-포함하지 않습니다. 다운로드 가능 여부는 각 원본의 접근 가능 상태에 따릅니다.
-`--help`와 Python 문법 검사를 확인했으며 실제 다운로드는 실행하지 않았습니다.
+| 옵션 | 설명 |
+|---|---|
+| `--annotation` | 입력 JSON annotation 경로 |
+| `--base-dir` | 영상·음성·프레임을 저장할 디렉터리 |
+| `--output-annotation` | 로컬 미디어 경로를 추가한 annotation 저장 경로 |
+| `--extract-items` | 추출할 유형을 쉼표로 구분하거나 `all` 지정 |
+| `--limit` | 처리할 최대 영상 수 |
+| `--force-extract` | 기존 추출 파일을 다시 생성 |
 
-서버의 `NSP/annotations_final.json`과 `omninsp-release/data/annotations_final.json`은
-파일 해시가 달라 서로 덮어쓰지 않았습니다. 향후 annotation을 공개하려면 코드
-공개와 별도로 버전과 배포 범위를 검토해야 합니다.
+추출 유형은 `context_video`, `context_audio`, `context_frame`, `target_video`, `target_audio`, `target_frame`입니다.
+
+## 코드 구조
+
+`download/reconstruct.py`의 `VideoDownloader`가 다운로드와 추출을 담당합니다. `extract_unique_videos()`가 annotation을 영상별로 묶고, `process_video()`와 `process_pair()`가 각 구간을 처리합니다. `enrich_annotation_with_paths()`는 생성된 파일 경로를 annotation에 연결합니다.
